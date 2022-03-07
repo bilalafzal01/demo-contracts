@@ -3,6 +3,12 @@ pragma solidity ^0.8.4;
 
 /// @title Voting with delegation
 contract Ballot {
+    event Voted(address indexed voter, string name, bool vote);
+    event RightToVote(address indexed voter);
+    event ProposalMade(uint8 proposal, string description);
+    event VoteDelegated(address indexed voter, address indexed delegatee);
+    event WinnerFound(string name);
+
     // * a single voter obj
     struct Voter {
         uint256 weight; // *    weight is accumulated by delegation
@@ -13,7 +19,7 @@ contract Ballot {
 
     // * type for a single proposal
     struct Proposal {
-        bytes32 name;
+        string name;
         uint256 voteCount;
     }
 
@@ -24,13 +30,14 @@ contract Ballot {
     // * A dynamically sized array of proposals
     Proposal[] public proposals;
 
-    constructor(bytes32 proposalNames) {
+    constructor(string[] memory proposalNames) {
         chairPerson = msg.sender;
         voters[chairPerson].weight = 1;
 
         // * For each proposal name provided, create a proposal object and add it to the proposals array
-        for (uint256 i = 0; i < proposalNames.length; i++) {
+        for (uint8 i = 0; i < proposalNames.length; i++) {
             proposals.push(Proposal({name: proposalNames[i], voteCount: 0}));
+            emit ProposalMade(i, proposalNames[i]);
         }
     }
 
@@ -44,6 +51,7 @@ contract Ballot {
         require(!voters[voter].voted, "Voter has already voted");
         require(voters[voter].weight == 0);
         voters[voter].weight = 1;
+        emit RightToVote(voter);
     }
 
     // * this function will help us delegate the vote to `to` parameter
@@ -62,12 +70,14 @@ contract Ballot {
         Voter storage delegate_ = voters[to];
 
         require(delegate_.weight >= 1);
+        emit VoteDelegated(msg.sender, to);
 
         sender.voted = true;
         sender.delegate = to;
         if (delegate_.voted) {
             // *    If the delegate already voted, directly add to the number of votes
             proposals[delegate_.vote].voteCount += sender.weight;
+            emit Voted(msg.sender, proposals[delegate_.vote].name, true);
         } else {
             delegate_.weight += sender.weight;
         }
@@ -84,6 +94,7 @@ contract Ballot {
         sender.vote = proposal;
 
         proposals[proposal].voteCount += sender.weight;
+        emit Voted(msg.sender, proposals[proposal].name, true);
     }
 
     // * this function will calculate the winning proposal
@@ -97,7 +108,10 @@ contract Ballot {
         }
     }
 
-    function winnerName() external view returns (bytes32 winnerName_) {
+    // * this function will return the winning proposal name
+    function winnerName() external returns (string memory winnerName_) {
         winnerName_ = proposals[winningProposal()].name;
+        emit WinnerFound(winnerName_);
+        return winnerName_;
     }
 }
