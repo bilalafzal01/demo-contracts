@@ -1,14 +1,17 @@
+const { ethers } = require("hardhat")
+
 async function main() {
-  const Box = await ethers.getContractFactory("Box");
-  console.log(`Deploying Box...`);
-  const box = await Box.deploy();
-  await box.deployed();
-  console.log(`Box deployed at ${box.address}`);
+  // * Ballot contract
+  const Ballot = await ethers.getContractFactory("Ballot")
+  console.log(`Deploying Ballot...`)
+  const ballot = await Ballot.deploy(["bilal", "aimen"])
+  await ballot.deployed()
+  console.log(`Ballot deployed at ${ballot.address}`)
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+    console.error(error)
+    process.exit(1)
+  })
