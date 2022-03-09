@@ -109,9 +109,7 @@ contract Ballot {
     }
 
     // * this function will return the winning proposal name
-    function winnerName() external returns (string memory winnerName_) {
-        winnerName_ = proposals[winningProposal()].name;
-        emit WinnerFound(winnerName_);
-        return winnerName_;
+    function winnerName() external view returns (string memory) {
+        return proposals[winningProposal()].name;
     }
 }

@@ -1,4 +1,5 @@
 const { expect } = require("chai")
+const { ethers } = require("hardhat")
 
 const candidates = ["bilal", "aimen"]
 
@@ -34,5 +35,40 @@ describe("Ballot", function () {
     // * check if voter has the right to vote
     const voterResp = await this.ballot.voters(voterAddress)
     expect(voterResp.voted).to.equal(false)
+  })
+
+  it("the voter votes for a proposal candidate", async function () {
+    const [, voter] = await ethers.getSigners()
+
+    // * voter votes
+    await this.ballot.connect(voter).vote(0)
+    // * check if voter has voted
+    const voterAddress = await voter.getAddress()
+    const voterResp = await this.ballot.voters(voterAddress)
+    expect(voterResp.voted).to.equal(true)
+  })
+
+  it("the voteCount of proposal candidate 0 should be 1 after running the previous call", async function () {
+    const proposal = await this.ballot.proposals(0)
+    expect(proposal.voteCount.toString()).to.equal("1")
+  })
+
+  it("the same voter votes for another candidate now", async function () {
+    try {
+      const [, voter] = await ethers.getSigners()
+      await this.ballot.connect(voter).vote(1)
+    } catch (err) {
+      expect(err.toString()).to.includes("Voter has already voted")
+    }
+  })
+
+  it("the voteCount of proposal candidate 1 should be 0 after running the previous call", async function () {
+    const proposal = await this.ballot.proposals(1)
+    expect(proposal.voteCount.toString()).to.equal("0")
+  })
+
+  it("returns the winnerName", async function () {
+    const winnerName = await this.ballot.winnerName()
+    expect(winnerName.toString()).to.equal(candidates[0])
   })
 })
